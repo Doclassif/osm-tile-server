@@ -24,6 +24,7 @@ if [ "$#" -ne 1 ]; then
     echo "    NAME_STYLE: name of the .style to use"
     echo "    NAME_MML: name of the .mml file to render to mapnik.xml"
     echo "    NAME_SQL: name of the .sql file to use"
+    echo "    PBF_BOUNDING: extracting bounding boxes pbf"
     exit 1
 fi
 
@@ -70,6 +71,12 @@ if [ "$1" == "import" ]; then
     if [ -n "${DOWNLOAD_PBF:-}" ]; then
         echo "INFO: Download PBF file: $DOWNLOAD_PBF"
         wget ${WGET_ARGS:-} "$DOWNLOAD_PBF" -O /data/region.osm.pbf
+        if [ -n "${PBF_BOUNDING:-}" ]; then
+            echo "INFO: Extracting bounding boxes" $PBF_BOUNDING
+            osmosis --read-pbf /data/region.osm.pbf --bounding-box $PBF_BOUNDING --write-pbf /data/new-region.osm.pbf &&
+            rm /data/region.osm.pbf &&
+            cp /data/new-region.osm.pbf /data/region.osm.pbf 
+        fi
         if [ -n "${DOWNLOAD_POLY:-}" ]; then
             echo "INFO: Download PBF-POLY file: $DOWNLOAD_POLY"
             wget ${WGET_ARGS:-} "$DOWNLOAD_POLY" -O /data/region.poly

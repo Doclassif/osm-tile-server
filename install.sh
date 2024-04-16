@@ -1,10 +1,14 @@
 PBF=$1
+BOUNDING=$2
 DOWNLOAD_PBF="${PBF:-}"
+PBF_BOUNDING="${BOUNDING:-}"
 OSM_DATA=osm-data
 DATA=$OSM_DATA:/data/database/
 OSM_TILES=osm-tiles
 TILES=$OSM_TILES:/data/tiles/
 IMAGE=doclassif/osm-tile-server
+
+echo "params" $DOWNLOAD_PBF $PBF_BOUNDING
 
 if [ -f imported ]; then
     docker run \
@@ -22,6 +26,7 @@ else
     docker run \
     --name osm-tile-server-import \
     -e DOWNLOAD_PBF=$DOWNLOAD_PBF \
+    -e PBF_BOUNDING="$PBF_BOUNDING" \
     -v $DATA \
     -v $TILES \
     $IMAGE \
