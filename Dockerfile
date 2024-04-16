@@ -17,15 +17,21 @@ RUN apt-get update \
 
 FROM compiler-common AS compiler-stylesheet
 RUN cd ~ \
-&& git clone --single-branch --branch v5.4.0 https://github.com/gravitystorm/openstreetmap-carto.git --depth 1 \
+&& git clone --single-branch --branch master https://github.com/gravitystorm/openstreetmap-carto.git --depth 1 \
 && cd openstreetmap-carto \
-&& sed -i 's/, "unifont Medium", "Unifont Upper Medium"//g' style/fonts.mss \
-&& sed -i 's/"Noto Sans Tibetan Regular",//g' style/fonts.mss \
-&& sed -i 's/"Noto Sans Tibetan Bold",//g' style/fonts.mss \
-&& sed -i 's/Noto Sans Syriac Eastern Regular/Noto Sans Syriac Regular/g' style/fonts.mss \
+&& cp project.mml project-osm-carto.mml \
+&& rm project.mml \
 && rm -rf .git
 
-###########################################################################################################
+FROM compiler-common AS compiler-stylesheet-osm-bright
+RUN cd ~ \
+&& git clone --single-branch --branch main https://github.com/geofabrik/osm-bright.git --depth 1 \
+&& cd osm-bright \
+&& rm -rf .git 
+
+
+
+###########################################################################################################t
 
 FROM compiler-common AS compiler-helper-script
 RUN mkdir -p /home/renderer/src \
@@ -87,6 +93,7 @@ RUN apt-get update \
 && apt-get autoremove --yes \
 && rm -rf /var/lib/{apt,dpkg,cache,log}/
 
+
 RUN adduser --disabled-password --gecos "" renderer
 
 # Get Noto Emoji Regular font, despite it being deprecated by Google
@@ -115,7 +122,7 @@ RUN ln -sf /dev/stdout /var/log/apache2/access.log \
 # leaflet
 COPY leaflet-demo.html /var/www/html/index.html
 RUN cd /var/www/html/ \
-&& wget https://github.com/Leaflet/Leaflet/releases/download/v1.8.0/leaflet.zip \
+&& wget https://github.com/Leaflet/Leaflet/releases/download/v1.9.4/leaflet.zip \
 && unzip leaflet.zip \
 && rm leaflet.zip
 
@@ -149,14 +156,14 @@ RUN mkdir -p /run/renderd/ \
   &&  mv  /var/cache/renderd/tiles/            /data/tiles/     \
   &&  chown  -R  renderer: /data/tiles \
   &&  ln  -s  /data/database/postgres  /var/lib/postgresql/$PG_VERSION/main             \
-  &&  ln  -s  /data/style              /home/renderer/src/openstreetmap-carto  \
+  &&  ln  -s  /data/style              /home/renderer/src/style-backup  \
   &&  ln  -s  /data/tiles              /var/cache/renderd/tiles                \
 ;
 
 RUN echo '[default] \n\
 URI=/tile/ \n\
 TILEDIR=/var/cache/renderd/tiles \n\
-XML=/home/renderer/src/openstreetmap-carto/mapnik.xml \n\
+XML=/home/renderer/src/style-backup/mapnik.xml \n\
 HOST=localhost \n\
 TILESIZE=256 \n\
 MAXZOOM=20' >> /etc/renderd.conf \
@@ -165,7 +172,13 @@ MAXZOOM=20' >> /etc/renderd.conf \
 # Install helper script
 COPY --from=compiler-helper-script /home/renderer/src/regional /home/renderer/src/regional
 
-COPY --from=compiler-stylesheet /root/openstreetmap-carto /home/renderer/src/openstreetmap-carto-backup
+COPY --from=compiler-stylesheet /root/openstreetmap-carto /home/renderer/src/style-backup
+
+COPY --from=compiler-stylesheet-osm-bright /root/osm-bright /home/renderer/src/style-backup
+
+COPY get-osm-bright-shapefiles.sh /home/renderer/src/style-backup/shp/
+
+RUN bash /home/renderer/src/style-backup/shp/get-osm-bright-shapefiles.sh
 
 # Start running
 COPY run.sh /

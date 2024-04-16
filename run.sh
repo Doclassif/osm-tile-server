@@ -29,9 +29,9 @@ fi
 
 set -x
 
-# if there is no custom style mounted, then use osm-carto
+# if there is no custom style mounted, then use osm-carto + osm-bright
 if [ ! "$(ls -A /data/style/)" ]; then
-    mv /home/renderer/src/openstreetmap-carto-backup/* /data/style/
+    mv /home/renderer/src/style-backup/* /data/style/
 fi
 
 # carto build
