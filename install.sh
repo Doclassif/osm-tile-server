@@ -1,7 +1,9 @@
 PBF=$1
 BOUNDING=$2
+UPD=$3
 DOWNLOAD_PBF="${PBF:-}"
 PBF_BOUNDING="${BOUNDING:-}"
+UPDATES="${UPD:-disabled}"
 OSM_DATA=osm-data
 DATA=$OSM_DATA:/data/database/
 OSM_TILES=osm-tiles
@@ -14,7 +16,7 @@ if [ -f imported ]; then
     docker run \
     --name osm-tile-server \
     -p 8070:80 \
-    -e UPDATES=enabled \
+    -e UPDATES=$UPDATES \
     -v $DATA \
     -v $TILES \
     -d $IMAGE \
